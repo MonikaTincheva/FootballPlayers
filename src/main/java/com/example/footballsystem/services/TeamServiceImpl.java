@@ -1,5 +1,6 @@
 package com.example.footballsystem.services;
 
+import com.example.footballsystem.exceptions.EntityDuplicateException;
 import com.example.footballsystem.helpers.EntityHelper;
 import com.example.footballsystem.models.entity.Team;
 import com.example.footballsystem.repositories.TeamRepository;
@@ -33,65 +34,62 @@ public class TeamServiceImpl implements TeamService {
     }
 
     public String processCSVFile(MultipartFile file) {
-        List<Team> teams = new ArrayList<>();
 
         StringBuilder stringBuilder = new StringBuilder();
+        int countTeam =0;
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
             String line = reader.readLine();
 
-            try {
-                while ((line = reader.readLine()) != null) {
+
+            while ((line = reader.readLine()) != null) {
+
+                try {
                     String[] data = line.split(",");
+                    String name = data[1];
+                    String managerName = data[2];
+                    String groupTeam = data[3];
 
-                        String name = data[1];
-                        String managerName = data[2];
-                        String groupTeam = data[3];
+                    if (!EntityHelper.validateName(name) || !EntityHelper.validateName(managerName)
+                            || !EntityHelper.validateGroup(groupTeam)) {
+                        throw new NumberFormatException(data[1]);
+                    }
+                    if (repository.findTeamByName(name) != null) {
+                        throw new EntityDuplicateException("Team", "name", name);
+                    }
 
-                        if (EntityHelper.validateName(name) && EntityHelper.validateName(managerName)
-                        && EntityHelper.validateGroup(groupTeam)) {
-                            Team team = new Team();
-                            team.setName(name);
-                            team.setManagerName(managerName);
-                            team.setGroupTeam(groupTeam);
+                    Team team = new Team(name, managerName, groupTeam);
+                    repository.save(team);
+                    countTeam++;
 
-                            Team team1 = repository.findTeamByName(name);
-                            if(team1==null){
-                                teams.add(team);
-                            } else{
-                                stringBuilder.append(String.format("A team with this name: %s already exists!%n",name));
-                            }
-                        }else {
-                            stringBuilder.append(String.format(
-                                    "Invalid parameters on one of the lines: " + line +"!"));
-                        }
+
+                } catch (NumberFormatException e) {
+                    stringBuilder.append("Invalid parameters are Player with id:" + e.getMessage() + "!").append(System.lineSeparator());
+                } catch (IndexOutOfBoundsException e) {
+                    stringBuilder.append("Invalid count parameters of line: " + line + "!").append(System.lineSeparator());
+                } catch (Exception e) {
+                    stringBuilder.append(e.getMessage()).append(System.lineSeparator());
+
                 }
-                saveAll(teams);
-            } catch (NumberFormatException | IndexOutOfBoundsException e){
-                stringBuilder.append("Invalid parameters on one of the lines: " + line +"!").append(System.lineSeparator());
             }
-
         } catch (IOException e) {
             return "Invalid file!";
         }
-        if (teams.isEmpty()) {
+        if (countTeam==0) {
             return stringBuilder.toString();
         }
-        return stringBuilder.append(String.format("You have successfully added %d teams", teams.size())).toString();
+        return stringBuilder.append(String.format("You have successfully added %d teams", countTeam)).toString();
 
     }
 
     @Override
     public String delete(long id) {
-     Team team = repository.findById(id)
-             .orElseThrow(() -> new EntityNotFoundException(String.format("Team whit this %d does not exist!",id)));
-     repository.delete(team);
-     return "You have successfully deleted a team named: "+team.getName();
+        Team team = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(String.format("Team whit this %d does not exist!", id)));
+        repository.delete(team);
+        return "You have successfully deleted a team named: " + team.getName();
     }
 
-    public void saveAll(List<Team> teams) {
-       repository.saveAll(teams);
-    }
 }
 
 

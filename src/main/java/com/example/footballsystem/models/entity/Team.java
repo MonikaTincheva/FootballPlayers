@@ -38,6 +38,12 @@ public class Team {
     @OneToMany(mappedBy = "team",fetch = FetchType.EAGER)
     private Set<Player> players = new HashSet<>();
 
+    public Team(String name, String managerName, String groupTeam) {
+        this.name = name;
+        this.managerName = managerName;
+        this.groupTeam = groupTeam;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

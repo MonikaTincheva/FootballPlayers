@@ -32,7 +32,7 @@ public class PlayerController {
 
     @GetMapping("/pair")
     public String getPairOfPlayers() {
-        return service.getPairOfPlayers();
+        return service.getPairOfFootballPlayers();
 
     }
 
@@ -41,7 +41,8 @@ public class PlayerController {
 
         try {
             return ResponseEntity.ok(service.processCSVFile(multipartFile));
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Error: " + e.getMessage());
         }
     }

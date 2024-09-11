@@ -28,7 +28,6 @@ public class RecordController {
     }
     @PostMapping("/file")
     public ResponseEntity<String> uploadCSVFile(@RequestParam("file") MultipartFile multipartFile) {
-
         try {
             return ResponseEntity.ok(service.processCSVFile(multipartFile));
         } catch (Exception e) {

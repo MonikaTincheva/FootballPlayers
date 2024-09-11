@@ -35,6 +35,12 @@ public class Player {
     @JoinColumn()
     private Team team;
 
+    public Player(String fullName, Integer teamNumber, String position, Team team) {
+        this.fullName = fullName;
+        this.teamNumber = teamNumber;
+        this.position = position;
+        this.team = team;
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

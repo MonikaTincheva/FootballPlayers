@@ -12,5 +12,5 @@ public interface PlayerService {
 
     String delete(long id);
 
-    String getPairOfPlayers();
+    String getPairOfFootballPlayers();
 }

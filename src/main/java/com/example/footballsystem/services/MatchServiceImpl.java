@@ -1,5 +1,6 @@
 package com.example.footballsystem.services;
 
+import com.example.footballsystem.exceptions.EntityDuplicateException;
 import com.example.footballsystem.helpers.DateHelper;
 import com.example.footballsystem.helpers.EntityHelper;
 import com.example.footballsystem.models.entity.Match;
@@ -13,10 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -42,54 +41,67 @@ public class MatchServiceImpl implements MatchService {
     public String processCSVFile(MultipartFile file) {
 
         StringBuilder builder = new StringBuilder();
-        List<Match> matches = new ArrayList<>();
+        int countMatch = 0;
+
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
             String line = reader.readLine();
+
             while ((line = reader.readLine()) != null) {
                 try {
-
                     String[] data = line.split(",");
-                    long idATeam = Long.parseLong(data[1]);
-                    long idBTeam = Long.parseLong(data[2]);
-
-                    LocalDate date = DateHelper.parseDate(data[3]);
-                    String score = data[4];
-
-                    Team ATeam = teamRepository.findById(idATeam)
-                            .orElseThrow(() -> new NoSuchElementException("Team with ID " + idATeam + " not found"));
-
-                    Team BTeam = teamRepository.findById(idBTeam)
-                            .orElseThrow(() -> new NoSuchElementException("Team with ID " + idBTeam + " not found"));
-                    if (EntityHelper.isValidScore(score)) {
-                        Match match = repository.findByATeamsAndBTeamsAndDate(ATeam, BTeam, date);
-                        if (match == null) {
-                            matches.add(new Match(ATeam, BTeam, date, score));
-                        } else {
-                            builder.append("А Match with parameters: " + line + " already exists!").append(System.lineSeparator());
-                        }
-
-                    } else {
-                        builder.append("Invalid parameters on one of the lines: " + line + "!").append(System.lineSeparator());
+                    if (data.length < 5) {
+                        throw new IndexOutOfBoundsException();
                     }
+                    Match match = createMatch(data);
+                    repository.save(match);
+                    countMatch++;
 
-
-                } catch (IllegalArgumentException e) {
-                    builder.append(String.format(
-                            "Invalid parameters on one of the lines: " + line + "!")).append(System.lineSeparator());
-                } catch (NoSuchElementException e) {
+                } catch (NumberFormatException e) {
+                    builder.append("Invalid parameters are Match with id:" + e.getMessage() + "!").append(System.lineSeparator());
+                } catch (IndexOutOfBoundsException e) {
+                    builder.append("Invalid count parameters of line: " + line + "!").append(System.lineSeparator());
+                } catch (Exception e) {
                     builder.append(e.getMessage()).append(System.lineSeparator());
+
                 }
-                repository.saveAll(matches);
             }
-        } catch (IOException e) {
+        }catch (Exception e){
             return "Invalid file!";
         }
-
-
-        if (matches.isEmpty()) {
+        if (countMatch==0) {
             return builder.toString();
         }
-        return builder.append(String.format("You have successfully added %d matches", matches.size())).toString();
+        return builder.append(String.format("You have successfully added %d matches", countMatch)).toString();
+
+    }
+
+    private Match createMatch(String[] data) {
+
+
+
+        long idATeam = Long.parseLong(data[1]);
+        long idBTeam = Long.parseLong(data[2]);
+
+        LocalDate date = DateHelper.parseDate(data[3]);
+        String score = data[4];
+
+        Team ATeam = teamRepository.findById(idATeam)
+                .orElseThrow(() -> new NoSuchElementException("Team with ID " + idATeam + " not found"));
+
+        Team BTeam = teamRepository.findById(idBTeam)
+                .orElseThrow(() -> new NoSuchElementException("Team with ID " + idBTeam + " not found"));
+
+        if (repository.findByATeamsAndBTeamsAndDate(ATeam, BTeam, date) != null) {
+            throw new EntityDuplicateException("Match", "ATeam and BTeam", ATeam.getName() +" "+BTeam.getName());
+        }
+
+        if (!EntityHelper.isValidScore(score)) {
+            throw new NumberFormatException(data[1]);
+        }
+
+        return new Match(ATeam, BTeam, date, score);
+
+
     }
 
     @Override

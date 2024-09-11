@@ -1,5 +1,6 @@
 package com.example.footballsystem.services;
 
+import com.example.footballsystem.exceptions.EntityDuplicateException;
 import com.example.footballsystem.helpers.EntityHelper;
 import com.example.footballsystem.models.entity.Match;
 import com.example.footballsystem.models.entity.Player;
@@ -42,60 +43,71 @@ public class RecordServiceImpl implements RecordService {
     @Override
     public String processCSVFile(MultipartFile file) {
         StringBuilder builder = new StringBuilder();
-        List<Record> records = new ArrayList<>();
+        int countRecords = 0;
+
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
             String line = reader.readLine();
             while ((line = reader.readLine()) != null) {
                 try {
+
                     String[] data = line.split(",");
-                    long playerId = Long.parseLong(data[1].trim());
-                    long matchId = Long.parseLong(data[2].trim());
-                    int fromMinutes = Integer.parseInt(data[3].trim());
-                    int toMinutes;
-
-                    if(data[4].equalsIgnoreCase("null")){
-                        toMinutes = 90;
-
-                    }else {
-                        toMinutes =Integer.parseInt(data[4]);
+                    if (data.length < 5) {
+                        throw new IndexOutOfBoundsException();
                     }
+                    Record record = createRecord(data);
+                    repository.save(record);
+                    countRecords++;
 
-                     Player player = playerRepository.findById(playerId)
-                             .orElseThrow(() -> new NoSuchElementException("Player with ID " + playerId + " not found"));
 
-
-                   Match match = matchRepository.findById(matchId)
-                           .orElseThrow(() -> new NoSuchElementException("Match with ID " + matchId + " not found"));
-                   if(EntityHelper.validateMinutes(fromMinutes) && EntityHelper.validateMinutes(toMinutes)){
-                       Record  record = repository
-                               .getRecordByPlayerAndAndMatchAndFromMinutesAndToMinutes(player,match,fromMinutes,toMinutes);
-                       if(record == null){
-                           records.add(new Record(player,match,fromMinutes,toMinutes));
-                       }
-                       else {
-                           builder.append("А Record with parameters: "+line+" already exists!").append(System.lineSeparator());
-                       }
-
-                   }
-                   else{
-                       builder.append(String.format(
-                               "Invalid parameters on one of the lines: " + line +"!"));
-                   }
-
-                } catch (NumberFormatException | NoSuchElementException e) {
+                }  catch (NumberFormatException e) {
+                   builder.append("Invalid parameters are Record with id:" + e.getMessage() + "!").append(System.lineSeparator());
+                } catch (IndexOutOfBoundsException e) {
+                    builder.append("Invalid count parameters of line: " + line + "!").append(System.lineSeparator());
+                } catch (Exception e) {
                     builder.append(e.getMessage()).append(System.lineSeparator());
+
                 }
-                repository.saveAll(records);
             }
         } catch (IOException e) {
             return "Invalid file!";
         }
 
 
-        if (records.isEmpty()) {
+        if (countRecords==0) {
             return builder.toString();
         }
-        return builder.append(String.format("You have successfully added %d records", records.size())).toString();
+        return builder.append(String.format("You have successfully added %d records", countRecords)).toString();
+    }
+
+
+    private Record createRecord(String[] data) {
+        long playerId = Long.parseLong(data[1].trim());
+        long matchId = Long.parseLong(data[2].trim());
+        int fromMinutes = Integer.parseInt(data[3].trim());
+        int toMinutes;
+
+        if (data[4].equalsIgnoreCase("null")) {
+            toMinutes = 90;
+
+        } else {
+            toMinutes = Integer.parseInt(data[4]);
+        }
+
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new NoSuchElementException("Player with ID " + playerId + " not found"));
+
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new NoSuchElementException("Match with ID " + matchId + " not found"));
+
+        if (!EntityHelper.validateMinutes(fromMinutes) || !EntityHelper.validateMinutes(toMinutes)) {
+            throw new NumberFormatException(data[1]);
+        }
+
+        if (repository
+                .getRecordByPlayerAndAndMatchAndFromMinutesAndToMinutes(player, match, fromMinutes, toMinutes) != null) {
+         throw new EntityDuplicateException("Record","Id",data[1]);
+        }
+        return new Record(player,match,fromMinutes,toMinutes);
     }
 
     @Override
