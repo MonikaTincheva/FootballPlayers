@@ -1,7 +1,7 @@
 package com.example.footballsystem.controller;
 
-import com.example.footballsystem.models.entity.Team;
-import com.example.footballsystem.services.interfaces.TeamService;
+import com.example.footballsystem.models.entity.Player;
+import com.example.footballsystem.services.interfaces.PlayerService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,19 +13,26 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/teams")
-public class TeamController {
+@RequestMapping("/players")
+public class PlayerController {
 
-    private final TeamService service;
+    private final PlayerService service;
 
     @Autowired
-    public TeamController(TeamService teamService) {
-        this.service = teamService;
+    public PlayerController(PlayerService service) {
+        this.service = service;
     }
 
+
     @GetMapping
-    public List<Team> get() {
+    public List<Player> get() {
         return service.getAll();
+
+    }
+
+    @GetMapping("/pair")
+    public String getPairOfPlayers() {
+        return service.getPairOfPlayers();
 
     }
 
@@ -39,7 +46,6 @@ public class TeamController {
         }
     }
 
-
     @DeleteMapping("/{id}")
     public String delete(@PathVariable long id) {
         try {
@@ -48,4 +54,5 @@ public class TeamController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
     }
+
 }

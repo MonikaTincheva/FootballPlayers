@@ -1,9 +1,10 @@
 package com.example.footballsystem.controller;
 
-import com.example.footballsystem.models.entity.Team;
-import com.example.footballsystem.services.interfaces.TeamService;
+import com.example.footballsystem.models.entity.Match;
+import com.example.footballsystem.repositories.MatchRepository;
+import com.example.footballsystem.repositories.RecordRepository;
+import com.example.footballsystem.services.interfaces.MatchService;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,21 +14,24 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/teams")
-public class TeamController {
+@RequestMapping("/matches")
+public class MatchController {
 
-    private final TeamService service;
+    private final MatchService service;
 
-    @Autowired
-    public TeamController(TeamService teamService) {
-        this.service = teamService;
+
+    public MatchController(MatchService service, RecordRepository repository, MatchRepository repository1, RecordRepository recordRepository) {
+        this.service = service;
+
     }
 
+
     @GetMapping
-    public List<Team> get() {
+    public List<Match> get() {
         return service.getAll();
 
     }
+
 
     @PostMapping("/file")
     public ResponseEntity<String> uploadCSVFile(@RequestParam("file") MultipartFile multipartFile) {
@@ -49,3 +53,6 @@ public class TeamController {
         }
     }
 }
+
+
+
