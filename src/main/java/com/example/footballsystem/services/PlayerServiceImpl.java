@@ -122,7 +122,6 @@ public class PlayerServiceImpl implements PlayerService {
                         && record.getPlayer().getTeam().getId() != record2.getPlayer().getTeam().getId()) {
                     Player first = record.getPlayer();
                     Player second = record2.getPlayer();
-
                     Pair pair = new Pair(first, second);
                     int totalTimeWhitPlay = timeOfPlayedTogether(record.getFromMinutes(), record.getToMinutes(),
                             record2.getFromMinutes(), record2.getToMinutes());

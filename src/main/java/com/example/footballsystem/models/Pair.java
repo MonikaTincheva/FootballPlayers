@@ -13,12 +13,12 @@ public class Pair {
 
     private Player playerOne;
     private Player playerTwo;
-    private Map<Long, Integer> record;
+
 
     public Pair(Player playerOne, Player playerTwo) {
         this.playerOne = playerOne;
         this.playerTwo = playerTwo;
-        record = new HashMap<>();
+
     }
 
     @Override
